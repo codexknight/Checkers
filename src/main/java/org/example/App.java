@@ -361,7 +361,7 @@ public class App extends Application {
         }
 
         private void doClickSquare(int row, int col) {
-            
+
         }
     }
 
