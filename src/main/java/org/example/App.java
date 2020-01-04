@@ -6,6 +6,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -34,11 +35,13 @@ public class App extends Application {
         newGameButton.relocate(370,120);
         newGameButton.setManaged(false);
         newGameButton.resize(100,30);
+        newGameButton.setOnAction(e -> board.doNewGame());
 
         resignButton = new Button("Resign");
         resignButton.relocate(370,200);
         resignButton.setManaged(false);
         resignButton.resize(100,30);
+        resignButton.setOnAction(e->board.doResign());
 
         message = new Label("Click \"New Game\" to begin");
         message.relocate(20,370);
@@ -48,6 +51,7 @@ public class App extends Application {
         board = new CheckersBoard();
         board.relocate(20,20);
         board.drawBoard();
+        board.setOnMousePressed(e -> board.mousePressed(e));
 
         Pane root = new Pane();
         root.setPrefWidth(500);
@@ -185,12 +189,12 @@ public class App extends Application {
 
             if (player == RED) {
                 if (board[r1][c1] == RED && r2 > r1)
-                    return false;  // Regular red piece can only move down.
+                    return false;  // Regular red piece can only move up.
                 return true;  // The move is legal.
             }
             else {
                 if (board[r1][c1] == BLACK && r2 < r1)
-                    return false;  // Regular black piece can only move up.
+                    return false;  // Regular black piece can only move down.
                 return true;  // The move is legal.
             }
         }
@@ -322,6 +326,41 @@ public class App extends Application {
                     }
                 }
             }
+
+        }
+
+        public void doResign() {
+            if (gameInProgress == false) {
+                message.setText("There is no game in progress!");
+                return;
+            }
+            if (currentPlayer == CheckersData.RED) {
+                gameOver("RED resigns. BLACK wins.");
+            } else {
+                gameOver("BLACK resigns. RED wins.");
+            }
+        }
+
+        private void gameOver(String s) {
+            message.setText(s);
+            newGameButton.setDisable(false);
+            resignButton.setDisable(true);
+            gameInProgress = false;
+        }
+
+        public void mousePressed(MouseEvent e) {
+            if (gameInProgress == false) {
+                message.setText("Click \"New Game\" to start a new game.");
+            } else {
+                int col = (int) ((e.getX() - 2) / 40);
+                int row = (int) ((e.getY() - 2) / 40);
+                if (col >= 0 && col < 8 && row >= 0 && row < 8) {
+                    doClickSquare(row, col);
+                }
+            }
+        }
+
+        private void doClickSquare(int row, int col) {
 
         }
     }
