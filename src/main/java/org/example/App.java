@@ -83,6 +83,9 @@ public class App extends Application {
             toCol = c2;
         }
 
+        public boolean isJump() {
+            return (fromRow - toRow == 2 || fromRow - toRow == -2);
+        }
     }
 
 
@@ -222,6 +225,54 @@ public class App extends Application {
             }
         }
 
+        public void makeMove(CheckersMove move) {
+            makeMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        }
+
+        private void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
+
+            board[toRow][toCol] = board[fromRow][fromCol];
+            board[fromRow][fromCol] = EMPTY;
+            if (fromRow - toRow == 2 || fromRow - toRow == -2) {
+                // The move is a jump.  Remove the jumped piece from the board.
+                int jumpRow = (fromRow + toRow) / 2;  // Row of the jumped piece.
+                int jumpCol = (fromCol + toCol) / 2;  // Column of the jumped piece.
+                board[jumpRow][jumpCol] = EMPTY;
+            }
+            if (toRow == 0 && board[toRow][toCol] == RED)
+                board[toRow][toCol] = RED_KING;
+            if (toRow == 7 && board[toRow][toCol] == BLACK)
+                board[toRow][toCol] = BLACK_KING;
+        }
+
+        CheckersMove[] getLegalJumpsFrom(int player, int row, int col) {
+            if (player != RED && player != BLACK)
+                return null;
+            int playerKing;  // The constant representing a King belonging to player.
+            if (player == RED)
+                playerKing = RED_KING;
+            else
+                playerKing = BLACK_KING;
+            ArrayList<CheckersMove> moves = new ArrayList<CheckersMove>();  // The legal jumps will be stored in this list.
+            if (board[row][col] == player || board[row][col] == playerKing) {
+                if (canJump(player, row, col, row+1, col+1, row+2, col+2))
+                    moves.add(new CheckersMove(row, col, row+2, col+2));
+                if (canJump(player, row, col, row-1, col+1, row-2, col+2))
+                    moves.add(new CheckersMove(row, col, row-2, col+2));
+                if (canJump(player, row, col, row+1, col-1, row+2, col-2))
+                    moves.add(new CheckersMove(row, col, row+2, col-2));
+                if (canJump(player, row, col, row-1, col-1, row-2, col-2))
+                    moves.add(new CheckersMove(row, col, row-2, col-2));
+            }
+            if (moves.size() == 0)
+                return null;
+            else {
+                CheckersMove[] moveArray = new CheckersMove[moves.size()];
+                for (int i = 0; i < moves.size(); i++)
+                    moveArray[i] = moves.get(i);
+                return moveArray;
+            }
+        }
     }
 
 
@@ -239,7 +290,7 @@ public class App extends Application {
 
 
         CheckersBoard() {
-            super(324,324);
+            super(324, 324);
             board = new CheckersData();
             doNewGame();
         }
@@ -276,52 +327,50 @@ public class App extends Application {
                     } else {
                         g.setFill(Color.GRAY);
                     }
-                    g.fillRect(2+col*40,2+row*40, 40,40);
+                    g.fillRect(2 + col * 40, 2 + row * 40, 40, 40);
 
-                    switch (board.pieceAt(row,col)) {
+                    switch (board.pieceAt(row, col)) {
                         case CheckersData.RED:
                             g.setFill(Color.RED);
-                            g.fillOval(8 + col*40, 8 + row*40, 28, 28);
+                            g.fillOval(8 + col * 40, 8 + row * 40, 28, 28);
                             break;
                         case CheckersData.BLACK:
                             g.setFill(Color.BLACK);
-                            g.fillOval(8 + col*40, 8 + row*40, 28, 28);
+                            g.fillOval(8 + col * 40, 8 + row * 40, 28, 28);
                             break;
                         case CheckersData.RED_KING:
                             g.setFill(Color.RED);
-                            g.fillOval(8 + col*40, 8 + row*40, 28, 28);
+                            g.fillOval(8 + col * 40, 8 + row * 40, 28, 28);
                             g.setFill(Color.WHITE);
-                            g.fillText("K", 15 + col*40, 29 + row*40);
+                            g.fillText("K", 15 + col * 40, 29 + row * 40);
                             break;
                         case CheckersData.BLACK_KING:
                             g.setFill(Color.BLACK);
-                            g.fillOval(8 + col*40, 8 + row*40, 28, 28);
+                            g.fillOval(8 + col * 40, 8 + row * 40, 28, 28);
                             g.setFill(Color.WHITE);
-                            g.fillText("K", 15 + col*40, 29 + row*40);
+                            g.fillText("K", 15 + col * 40, 29 + row * 40);
                             break;
                     }
 
                 }
             }
             if (gameInProgress) {
-                /* First, draw a 4-pixel cyan border around the pieces that can be moved. */
+
                 g.setStroke(Color.CYAN);
                 g.setLineWidth(4);
                 for (int i = 0; i < legalMoves.length; i++) {
-                    g.strokeRect(4 + legalMoves[i].fromCol*40, 4 + legalMoves[i].fromRow*40, 36, 36);
+                    g.strokeRect(4 + legalMoves[i].fromCol * 40, 4 + legalMoves[i].fromRow * 40, 36, 36);
                 }
-                /* If a piece is selected for moving (i.e. if selectedRow >= 0), then
-                    draw a yellow border around that piece and draw green borders
-                    around each square that that piece can be moved to. */
+
                 if (selectedRow >= 0) {
                     g.setStroke(Color.YELLOW);
                     g.setLineWidth(4);
-                    g.strokeRect(4 + selectedCol*40, 4 + selectedRow*40, 36, 36);
+                    g.strokeRect(4 + selectedCol * 40, 4 + selectedRow * 40, 36, 36);
                     g.setStroke(Color.LIME);
                     g.setLineWidth(4);
                     for (int i = 0; i < legalMoves.length; i++) {
                         if (legalMoves[i].fromCol == selectedCol && legalMoves[i].fromRow == selectedRow) {
-                            g.strokeRect(4 + legalMoves[i].toCol*40, 4 + legalMoves[i].toRow*40, 36, 36);
+                            g.strokeRect(4 + legalMoves[i].toCol * 40, 4 + legalMoves[i].toRow * 40, 36, 36);
                         }
                     }
                 }
@@ -362,7 +411,94 @@ public class App extends Application {
 
         private void doClickSquare(int row, int col) {
 
+            for (int i = 0; i < legalMoves.length; i++) {
+                if (legalMoves[i].fromRow == row && legalMoves[i].fromCol == col) {
+                    selectedRow = row;
+                    selectedCol = col;
+                    if (currentPlayer == CheckersData.RED) {
+                        message.setText("RED: Make your move.");
+                    } else {
+                        message.setText("BLACK: Make your move.");
+                    }
+                    drawBoard();
+                    return;
+                }
+            }
+            if (selectedRow < 0) {
+                message.setText("Click the piece you want to move.");
+                return;
+            }
+
+            for (int i = 0; i < legalMoves.length; i++) {
+                if (legalMoves[i].fromRow == selectedRow &&
+                        legalMoves[i].fromCol == selectedCol &&
+                        legalMoves[i].toRow == row &&
+                        legalMoves[i].toCol == col) {
+                    doMakeMove(legalMoves[i]);
+                    return;
+                }
+            }
+            message.setText("Click the square you want to move to.");
+
+        }
+
+        private void doMakeMove(CheckersMove move) {
+            board.makeMove(move);
+            if (move.isJump()) {
+                legalMoves = board.getLegalJumpsFrom(currentPlayer, move.toRow, move.toCol);
+                if (legalMoves != null) {
+                    if (currentPlayer == CheckersData.RED)
+                        message.setText("RED:  You must continue jumping.");
+                    else
+                        message.setText("BLACK:  You must continue jumping.");
+                    selectedRow = move.toRow;  // Since only one piece can be moved, select it.
+                    selectedCol = move.toCol;
+                    drawBoard();
+                    return;
+                }
+            }
+            if (currentPlayer == CheckersData.RED) {
+                currentPlayer = CheckersData.BLACK;
+                legalMoves = board.getLegalMoves(currentPlayer);
+                if (legalMoves == null)
+                    gameOver("BLACK has no moves.  RED wins.");
+                else if (legalMoves[0].isJump())
+                    message.setText("BLACK:  Make your move.  You must jump.");
+                else
+                    message.setText("BLACK:  Make your move.");
+            } else {
+                currentPlayer = CheckersData.RED;
+                legalMoves = board.getLegalMoves(currentPlayer);
+                if (legalMoves == null)
+                    gameOver("RED has no moves.  BLACK wins.");
+                else if (legalMoves[0].isJump())
+                    message.setText("RED:  Make your move.  You must jump.");
+                else
+                    message.setText("RED:  Make your move.");
+            }
+
+
+            selectedRow = -1;
+
+
+            if (legalMoves != null) {
+                boolean sameStartSquare = true;
+                for (int i = 1; i < legalMoves.length; i++)
+                    if (legalMoves[i].fromRow != legalMoves[0].fromRow
+                            || legalMoves[i].fromCol != legalMoves[0].fromCol) {
+                        sameStartSquare = false;
+                        break;
+                    }
+                if (sameStartSquare) {
+                    selectedRow = legalMoves[0].fromRow;
+                    selectedCol = legalMoves[0].fromCol;
+                }
+            }
+
+
+            drawBoard();
+
         }
     }
-
 }
+
